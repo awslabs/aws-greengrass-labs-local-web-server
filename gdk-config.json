@@ -1,0 +1,22 @@
+{
+  "component": {
+    "aws.greengrass.labs.LocalWebServer": {
+      "author": "Amazon",
+      "version": "LATEST",
+      "build": {
+        "build_system": "custom",
+        "custom_build_command": [
+          "bash",
+          "build-custom.sh",
+          "aws.greengrass.labs.LocalWebServer",
+          "LATEST"
+        ]
+      },
+      "publish": {
+        "bucket": "<PLACEHOLDER BUCKET HERE>",
+        "region": "<PLACEHOLDER REGION HERE>"
+      }
+    }
+  },
+  "tools_version": "1.0.0"
+}

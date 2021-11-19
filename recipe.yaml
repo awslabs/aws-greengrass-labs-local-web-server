@@ -1,0 +1,62 @@
+---
+RecipeFormatVersion: "2020-01-25"
+ComponentName: "aws.greengrass.labs.LocalWebServer"
+ComponentVersion: "1.0.0"
+ComponentDescription: Component to demonstrate running Local Web Server on Greengrass v2 (with Flask-Socket.io, and React)
+ComponentPublisher: Amazon
+ComponentDependencies:
+  aws.greengrass.Nucleus:
+    VersionRequirement: ">=2.4.0"
+  aws.greengrass.SecretManager:
+    VersionRequirement: ">=2.0.9"
+ComponentConfiguration:
+  DefaultConfiguration:
+    accessControl:
+      aws.greengrass.ipc.mqttproxy:
+        "aws.greengrass.labs.LocalWebServer:pub:0":
+          policyDescription: Allows access to publish to IoT Core topic(s).
+          operations:
+            - aws.greengrass#PublishToIoTCore
+          resources:
+            - "*"
+        "aws.greengrass.labs.LocalWebServer:sub:0":
+          policyDescription: Allows access to subscribe to IoT Core topic(s).
+          operations:
+            - aws.greengrass#SubscribeToIoTCore
+          resources:
+            - "*"
+      aws.greengrass.ipc.pubsub:
+        "aws.greengrass.labs.LocalWebServer:pub:1":
+          policyDescription: Allows access to publish to local topics.
+          operations:
+            - aws.greengrass#PublishToTopic
+          resources:
+            - "*"
+        "aws.greengrass.labs.LocalWebServer:sub:1":
+          policyDescription: Allows access to subscribe to local topics.
+          operations:
+            - aws.greengrass#SubscribeToTopic
+          resources:
+            - "*"
+      aws.greengrass.SecretManager:
+        "aws.greengrass.labs.LocalWebServer:secrets:1":
+          policyDescription: Allows access to Secret Manager values
+          operations:
+            - "aws.greengrass#GetSecretValue"
+          resources:
+            - "*"
+Manifests:
+  - Platform:
+      os: linux
+    Lifecycle:
+      Install:
+        RequiresPrivilege: true
+        Script: |
+          docker load -i {artifacts:decompressedPath}/aws.greengrass.labs.LocalWebServer/custom-build/aws.greengrass.labs.LocalWebServer/react-webapp.tar && docker load -i {artifacts:decompressedPath}/aws.greengrass.labs.LocalWebServer/custom-build/aws.greengrass.labs.LocalWebServer/flask-app.tar
+      Run:
+        RequiresPrivilege: true
+        Script: |
+          docker-compose -f {artifacts:decompressedPath}/aws.greengrass.labs.LocalWebServer/custom-build/aws.greengrass.labs.LocalWebServer/docker-compose.yaml up --no-build
+    Artifacts:
+      - URI: s3://BUCKET_NAME/COMPONENT_NAME/COMPONENT_VERSION/aws.greengrass.labs.LocalWebServer.zip
+        Unarchive: ZIP
