@@ -120,6 +120,8 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
+custom-build/
+greengrass-build/
 develop-eggs/
 dist/
 downloads/
