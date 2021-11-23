@@ -2,14 +2,14 @@
   "component": {
     "aws.greengrass.labs.LocalWebServer": {
       "author": "Amazon",
-      "version": "LATEST",
+      "version": "NEXT_PATCH",
       "build": {
         "build_system": "custom",
         "custom_build_command": [
           "bash",
           "build-custom.sh",
           "aws.greengrass.labs.LocalWebServer",
-          "LATEST"
+          "NEXT_PATCH"
         ]
       },
       "publish": {
