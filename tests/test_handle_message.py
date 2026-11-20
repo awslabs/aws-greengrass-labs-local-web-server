@@ -2,9 +2,27 @@ import pytest
 import json
 from artifacts.backend.app import app, socket_io, get_secret
 
+SECRET_USERNAME = "secret-user"
+SECRET_PASSWORD = "secret-password"
+
+
+def load_secret(mocker, username=SECRET_USERNAME, password=SECRET_PASSWORD):
+    """Run get_secret() against a mocked Greengrass IPC client returning these credentials."""
+    ipc_connect = mocker.patch("awsiot.greengrasscoreipc.connect")
+    response = (
+        ipc_connect.return_value.new_get_secret_value.return_value.get_response.return_value.result.return_value
+    )
+    response.secret_value.secret_string = json.dumps(
+        {"username": username, "password": password}
+    )
+    get_secret()
+    return ipc_connect
+
 
 def test_api_endpoints(mocker, monkeypatch):
     """Test Flask API endpoints"""
+
+    load_secret(mocker)
 
     # log the user in through Flask test client
     flask_test_client = app.test_client()
@@ -18,7 +36,7 @@ def test_api_endpoints(mocker, monkeypatch):
 
     # log in via HTTP
     r = flask_test_client.post(
-        "/api/login", json={"username": "test", "password": "test"}
+        "/api/login", json={"username": SECRET_USERNAME, "password": SECRET_PASSWORD}
     )
     assert r.status_code == 200
     assert json.loads(r.data.decode())["authenticated"] == True
@@ -37,6 +55,8 @@ def test_api_endpoints(mocker, monkeypatch):
 def test_handle_message(mocker, monkeypatch):
     """Test relaying message back to MQTT"""
 
+    load_secret(mocker)
+
     # log the user in through Flask test client
     flask_test_client = app.test_client()
 
@@ -50,7 +70,7 @@ def test_handle_message(mocker, monkeypatch):
 
     # log in via HTTP
     r = flask_test_client.post(
-        "/api/login", json={"username": "test", "password": "test"}
+        "/api/login", json={"username": SECRET_USERNAME, "password": SECRET_PASSWORD}
     )
     assert r.status_code == 200
     assert json.loads(r.data.decode())["authenticated"] == True
@@ -83,3 +103,28 @@ def test_get_secret(mocker, monkeypatch):
     get_secret()
 
     ipc_connect.assert_called_once()
+
+
+def test_get_secret_replaces_default_credentials(mocker):
+    """Only the Secrets Manager credential authenticates; test/test is rejected."""
+
+    load_secret(mocker)
+    flask_test_client = app.test_client()
+
+    r = flask_test_client.post(
+        "/api/login", json={"username": "test", "password": "test"}
+    )
+    assert json.loads(r.data.decode())["authenticated"] == False
+
+    r = flask_test_client.post(
+        "/api/login", json={"username": SECRET_USERNAME, "password": SECRET_PASSWORD}
+    )
+    assert json.loads(r.data.decode())["authenticated"] == True
+
+
+def test_app_config_is_hardened():
+    """No shipped session signing key and no debug mode."""
+
+    assert app.config["SECRET_KEY"] != "greengrass-v2-example"
+    assert len(app.config["SECRET_KEY"]) >= 32
+    assert app.config["DEBUG"] == False

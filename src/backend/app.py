@@ -17,15 +17,18 @@ logging.basicConfig(stream=sys.stdout, level=logging.DEBUG)
 
 app = Flask(__name__)
 app.config.update(
-    DEBUG=True,
-    SECRET_KEY="greengrass-v2-example",
+    DEBUG=False,
+    # Random per start so session cookies cannot be forged with a known key.
+    SECRET_KEY=os.urandom(32),
     PERMANENT_SESSION_LIFETIME=timedelta(minutes=15),
 )
 login_manager = LoginManager()
 login_manager.init_app(app)
 TIMEOUT = 10
 socket_io = SocketIO(app, cors_allowed_origins="*")
-users = [{"id": 46, "username": "test", "password": "test"}]
+# Populated from Greengrass Secret Manager by get_secret() at startup.
+# No default credentials are shipped.
+users = []
 
 
 class User(UserMixin):
@@ -142,6 +145,7 @@ def handle_message(msg):
 
 
 def get_secret():
+    global users
 
     ipc_client = awsiot.greengrasscoreipc.connect()
 
